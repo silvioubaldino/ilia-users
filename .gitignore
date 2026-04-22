@@ -32,3 +32,8 @@ vendor/
 # OS
 .DS_Store
 Thumbs.db
+
+# AI
+.claude/*
+.cursor/*
+.windsurf/*
