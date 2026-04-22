@@ -2,44 +2,65 @@ openapi: 3.0.0
 info:
   title: Microservice Users
   version: 1.0.0
-  
+
 servers:
   - url: http://localhost:3002
     description: Local
-  
-  
+
 tags:
+  - name: Health
   - name: Users
   - name: Auth
 
 paths:
-  # Users
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
   /users:
     post:
+      tags:
+        - Users
+      summary: Create a new user
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/UserRequest'
-      tags:
-        - Users
       responses:
-        '200':
+        '201':
+          description: User created
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UsersResponse'
-          description: Response
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-      
+        '400':
+          description: Invalid request body
+        '409':
+          description: Email already in use
+
     get:
       tags:
         - Users
-      security: 
+      summary: List all users
+      security:
         - bearerAuth: []
       responses:
-        200:
+        '200':
           description: OK
           content:
             application/json:
@@ -49,183 +70,199 @@ paths:
                   $ref: '#/components/schemas/UsersResponse'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-  /users/:id:
-    patch:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserRequest'
-      tags:
-        - Users
-      security: 
-        - bearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UsersResponse'
-          description: Response
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-      
+
+  /users/{id}:
     get:
       tags:
         - Users
-      security: 
+      summary: Get user by ID
+      security:
         - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserID'
       responses:
-        200:
+        '200':
           description: OK
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UsersResponse'
+        '400':
+          description: Invalid ID format
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: User not found
+
+    patch:
+      tags:
+        - Users
+      summary: Partially update a user
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsersResponse'
+        '400':
+          description: Invalid ID format or request body
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: User not found
+        '409':
+          description: Email already in use
+
     delete:
       tags:
         - Users
-      security: 
+      summary: Delete a user
+      security:
         - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserID'
       responses:
-        200:
-          description: OK
+        '204':
+          description: User deleted
+        '400':
+          description: Invalid ID format
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-  
-  # Auth
+        '404':
+          description: User not found
+
   /auth:
     post:
+      tags:
+        - Auth
+      summary: Authenticate and obtain a JWT token
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/AuthRequest'
-      tags:
-        - Auth
       responses:
         '200':
+          description: Authentication successful
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthResponse'
-          description: Response
+        '400':
+          description: Invalid request body
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-    
-  
+
 components:
+  parameters:
+    UserID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: User UUID
+
   schemas:
     UserRequest:
       type: object
       required:
-      - first_name
-      - last_name
-      - password
-      - email
+        - first_name
+        - last_name
+        - email
+        - password
       properties:
         first_name:
           type: string
+          example: John
         last_name:
           type: string
-        password:
-          type: string
+          example: Doe
         email:
           type: string
-    Users:
+          format: email
+          example: john@example.com
+        password:
+          type: string
+          example: secret
+
+    UserUpdateRequest:
       type: object
-      required:
-      - id
-      - first_name
-      - last_name
-      - password
-      - email
       properties:
-        id: 
-          type: string
         first_name:
           type: string
+          example: Jane
         last_name:
           type: string
-        password:
-          type: string
+          example: Doe
         email:
           type: string
-    UsersModel:
-      type: object
-      required:
-      - id
-      - first_name
-      - last_name
-      - password
-      - email
-      properties:
-        id: 
-          type: string
-        first_name:
-          type: string
-        last_name:
-          type: string
+          format: email
+          example: jane@example.com
         password:
           type: string
-        email:
-          type: string
+          example: newsecret
+
     UsersResponse:
       type: object
-      required:
-      - id
-      - first_name
-      - last_name
-      - email
       properties:
-        id: 
+        id:
           type: string
+          format: uuid
+          example: 00000000-0000-0000-0000-000000000001
         first_name:
           type: string
+          example: John
         last_name:
           type: string
+          example: Doe
         email:
           type: string
+          format: email
+          example: john@example.com
+
     AuthRequest:
       type: object
       required:
-      - email
-      - password
+        - email
+        - password
       properties:
-        user: 
-          type: object
-          properties:
-            email: 
-              type: string
-            password:
-              type: string
+        email:
+          type: string
+          format: email
+          example: john@example.com
+        password:
+          type: string
+          example: secret
 
     AuthResponse:
       type: object
-      required:
-      - email
-      - password
       properties:
-        user: 
-          type: object
-          properties:
-            id: 
-              type: string
-            first_name:
-              type: string
-            last_name:
-              type: string
-            email:
-              type: string
+        user:
+          $ref: '#/components/schemas/UsersResponse'
         access_token:
           type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
   securitySchemes:
-    bearerAuth:            # arbitrary name for the security scheme
+    bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+
   responses:
     UnauthorizedError:
-      description: Access token is missing or invalid    
+      description: Access token is missing or invalid
