@@ -73,6 +73,41 @@ go run ./cmd/server
 
 See `docs/swagger/ms-users.yaml` for full OpenAPI spec.
 
+### Examples
+
+```bash
+# Health check
+curl http://localhost:3002/health
+
+# Create user
+curl -s -X POST http://localhost:3002/users \
+  -H "Content-Type: application/json" \
+  -d '{"first_name":"John","last_name":"Doe","email":"john@example.com","password":"secret"}'
+
+# Login → get token
+TOKEN=$(curl -s -X POST http://localhost:3002/auth \
+  -H "Content-Type: application/json" \
+  -d '{"email":"john@example.com","password":"secret"}' | jq -r '.access_token')
+
+# List users
+curl -s http://localhost:3002/users \
+  -H "Authorization: Bearer $TOKEN"
+
+# Get user by ID
+curl -s http://localhost:3002/users/<id> \
+  -H "Authorization: Bearer $TOKEN"
+
+# Update user
+curl -s -X PATCH http://localhost:3002/users/<id> \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"first_name":"Jane"}'
+
+# Delete user
+curl -s -X DELETE http://localhost:3002/users/<id> \
+  -H "Authorization: Bearer $TOKEN"
+```
+
 ## Testing
 
 ```bash
